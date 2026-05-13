@@ -15,7 +15,4 @@ REGION_ALIAS("CODE", QSPI);
 REGION_ALIAS("DATA", BRAM);
 REGION_ALIAS("STACKS", BRAM);
 
-PROVIDE(PHYS_TIMER = _default_interrupt_handler);
-PROVIDE(VIRT_TIMER = _default_interrupt_handler);
-
 PROVIDE(_sys_stack_size = 256K);

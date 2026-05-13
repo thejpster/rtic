@@ -2,34 +2,38 @@
 
 pub const NVIC_PRIO_BITS: u8 = 4;
 
-pub struct Peripherals {
-    dummy: u32
-}
+pub struct Peripherals {}
 
 impl Peripherals {
     pub unsafe fn steal() -> Peripherals {
-        Peripherals { dummy: 123 }
+        Peripherals {}
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, defmt::Format)]
+#[allow(non_camel_case_types)]
 pub enum interrupt {
-    SGI_1,
-    SGI_2,
-    PHYS_TIMER,
-    VIRT_TIMER,
+    Sgi1,
+    Sgi2,
+    PhysTimer,
+    VirtTimer,
 }
 
+impl interrupt {
+    pub const fn as_intid(self) -> rtic::export::IntId {
+        match self {
+            Self::Sgi1 => rtic::export::IntId::sgi(1),
+            Self::Sgi2 => rtic::export::IntId::sgi(2),
+            Self::PhysTimer => rtic::export::IntId::ppi(14),
+            Self::VirtTimer => rtic::export::IntId::ppi(11),
+        }
+    }
+}
 
 impl Into<rtic::export::IntId> for interrupt {
     fn into(self) -> rtic::export::IntId {
-        match self {
-            interrupt::SGI_1 => rtic::export::IntId::sgi(1),
-            interrupt::SGI_2 => rtic::export::IntId::sgi(2),
-            interrupt::PHYS_TIMER => rtic::export::IntId::ppi(14),
-            interrupt::VIRT_TIMER => rtic::export::IntId::ppi(11),
-        }
-    } 
+        self.as_intid()
+    }
 }
 
 impl PartialEq<rtic::export::IntId> for interrupt {
@@ -39,39 +43,76 @@ impl PartialEq<rtic::export::IntId> for interrupt {
     }
 }
 
-/// Create the ARM GIC driver
-///
-/// # Safety
-///
-/// Only call this function once.
-pub unsafe fn make_gic() -> rtic::export::arm_gic::gicv3::GicV3<'static> {
-    /// Offset from PERIPHBASE for GIC Distributor
-    const GICD_BASE_OFFSET: usize = 0x0000_0000usize;
-
-    /// Offset from PERIPHBASE for the first GIC Redistributor
-    const GICR_BASE_OFFSET: usize = 0x0010_0000usize;
-
-    // Get the GIC address by reading CBAR
-    let periphbase = aarch32_cpu::register::ImpCbar::read().periphbase();
-    let gicd_base = periphbase.wrapping_byte_add(GICD_BASE_OFFSET);
-    let gicr_base = periphbase.wrapping_byte_add(GICR_BASE_OFFSET);
-
-    // Initialise the GIC.
-    // SAFETY: `gicd_base` points to the valid GICD MMIO region as obtained from the
-    // hardware CBAR register. This pointer is used exclusively by this GIC instance.
-    let gicd = unsafe {
-        rtic::export::arm_gic::UniqueMmioPointer::new(core::ptr::NonNull::new(gicd_base.cast()).unwrap())
-    };
-    let gicr_base = core::ptr::NonNull::new(gicr_base.cast()).unwrap();
-    // SAFETY: The GICD and GICR base addresses point to valid GICv3 MMIO regions as
-    // obtained from the hardware CBAR register. This function is only called once
-    // (via Board::new()'s atomic guard), ensuring exclusive ownership of the GIC.
-    let mut gic = unsafe { rtic::export::arm_gic::gicv3::GicV3::new(gicd, gicr_base, 1, false) };
-    gic.setup(0);
-    gic
-}
-
 #[unsafe(no_mangle)]
 pub extern "C" fn _default_interrupt_handler() {
     unimplemented!()
 }
+
+static TIMER_QUEUE: rtic_time::timer_queue::TimerQueue<TimerBackend> =
+    rtic_time::timer_queue::TimerQueue::new();
+
+pub struct TimerBackend;
+
+impl rtic_time::timer_queue::TimerQueueBackend for TimerBackend {
+    type Ticks = u64;
+
+    fn now() -> Self::Ticks {
+        aarch32_cpu::generic_timer::read_virtual_timer()
+    }
+
+    fn set_compare(instant: Self::Ticks) {
+        defmt::debug!("Set compare to {}", instant);
+        use aarch32_cpu::generic_timer::GenericTimer;
+        let mut timer = unsafe { aarch32_cpu::generic_timer::El1VirtualTimer::new() };
+        timer.counter_compare_set(instant);
+    }
+
+    fn clear_compare_flag() {
+        defmt::debug!("clear compare");
+        use aarch32_cpu::generic_timer::GenericTimer;
+        let mut timer = unsafe { aarch32_cpu::generic_timer::El1VirtualTimer::new() };
+        timer.counter_compare_set(u64::MAX);
+    }
+
+    fn pend_interrupt() {
+        defmt::debug!("pend interrupt");
+        use aarch32_cpu::generic_timer::GenericTimer;
+        let mut timer = unsafe { aarch32_cpu::generic_timer::El1VirtualTimer::new() };
+        timer.counter_compare_set(0);
+    }
+
+    fn timer_queue() -> &'static rtic_time::timer_queue::TimerQueue<Self> {
+        &TIMER_QUEUE
+    }
+}
+
+pub struct Mono;
+
+impl Mono {
+    pub fn start(mut timer: aarch32_cpu::generic_timer::El1VirtualTimer) {
+        use aarch32_cpu::generic_timer::GenericTimer;
+        TIMER_QUEUE.initialize(TimerBackend {});
+        timer.enable(true);
+        timer.interrupt_mask(false);
+    }
+
+    pub fn handle_irq() {
+        unsafe {
+            TIMER_QUEUE.on_monotonic_interrupt();
+        }
+    }
+}
+
+impl rtic_time::monotonic::TimerQueueBasedMonotonic for Mono {
+    type Backend = TimerBackend;
+
+    type Instant = Instant;
+
+    type Duration = Duration;
+}
+
+rtic_time::impl_embedded_hal_delay_fugit!(Mono);
+rtic_time::impl_embedded_hal_async_delay_fugit!(Mono);
+
+pub type Instant = fugit::Instant<u64, 1, 62_500_000>;
+pub type Duration = fugit::Duration<u64, 1, 62_500_000>;

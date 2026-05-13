@@ -7,3 +7,6 @@ target = "armv8r-none-eabihf"
 [alias]
 rb = "run --bin"
 rrb = "run --release --bin"
+
+[env]
+DEFMT_LOG="debug"
