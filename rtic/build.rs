@@ -24,6 +24,9 @@ fn main() {
         "thumbv7-backend" | "thumbv8main-backend" => {
             println!("cargo:rustc-cfg=feature=\"cortex-m-basepri\"");
         }
+        "armv8r-backend" => {
+            println!("cargo:rustc-cfg=feature=\"armv8r\"");
+        }
         "riscv-esp32c3-backend" => {
             println!("cargo:rustc-cfg=feature=\"riscv-esp32c3\"");
         }

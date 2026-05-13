@@ -1,6 +1,7 @@
 #[cfg(not(any(
     feature = "cortex-m-source-masking",
     feature = "cortex-m-basepri",
+    feature = "armv8r",
     feature = "test-template",
     feature = "riscv-esp32c3",
     feature = "riscv-esp32c6",
@@ -23,6 +24,9 @@ pub use esp32c6::*;
 #[cfg(feature = "riscv-slic")]
 pub use riscv_slic::*;
 
+#[cfg(feature = "armv8r")]
+pub use armv8r::*;
+
 #[cfg(any(feature = "cortex-m-source-masking", feature = "cortex-m-basepri"))]
 mod cortex;
 
@@ -37,3 +41,6 @@ mod esp32c6;
 
 #[cfg(feature = "riscv-slic")]
 mod riscv_slic;
+
+#[cfg(feature = "armv8r")]
+mod armv8r;

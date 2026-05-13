@@ -54,6 +54,7 @@ const ARMV6M: Target = Target::new("thumbv6m-none-eabi", false);
 const ARMV7M: Target = Target::new("thumbv7m-none-eabi", false);
 const ARMV8MBASE: Target = Target::new("thumbv8m.base-none-eabi", false);
 const ARMV8MMAIN: Target = Target::new("thumbv8m.main-none-eabi", false);
+const ARMV8R: Target = Target::new("armv8r-none-eabihf", false);
 const RISCV32IMC: Target = Target::new("riscv32imc-unknown-none-elf", false);
 const RISCV32IMAC: Target = Target::new("riscv32imac-unknown-none-elf", false);
 

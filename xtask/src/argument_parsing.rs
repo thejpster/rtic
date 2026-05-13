@@ -1,5 +1,5 @@
 use crate::{
-    cargo_command::CargoCommand, Target, ARMV6M, ARMV7M, ARMV8MBASE, ARMV8MMAIN, RISCV32IMAC,
+    cargo_command::CargoCommand, Target, ARMV6M, ARMV7M, ARMV8MBASE, ARMV8MMAIN, ARMV8R, RISCV32IMAC,
     RISCV32IMC,
 };
 use clap::{Args, Parser, Subcommand};
@@ -151,6 +151,7 @@ pub enum Backends {
     Thumbv7,
     Thumbv8Base,
     Thumbv8Main,
+    Armv8r,
     RiscvEsp32C3,
     RiscvEsp32C6,
     Riscv32ImcClint,
@@ -167,6 +168,7 @@ impl Backends {
             Backends::Thumbv7 => ARMV7M,
             Backends::Thumbv8Base => ARMV8MBASE,
             Backends::Thumbv8Main => ARMV8MMAIN,
+            Backends::Armv8r => ARMV8R,
             Backends::Riscv32ImcClint | Backends::Riscv32ImcMecall | Backends::RiscvEsp32C3 => {
                 RISCV32IMC
             }
@@ -183,6 +185,7 @@ impl Backends {
             Backends::Thumbv7 => "thumbv7-backend",
             Backends::Thumbv8Base => "thumbv8base-backend",
             Backends::Thumbv8Main => "thumbv8main-backend",
+            Backends::Armv8r => "armv8r-backend",
             Backends::RiscvEsp32C3 => "riscv-esp32c3-backend",
             Backends::RiscvEsp32C6 => "riscv-esp32c6-backend",
             Backends::Riscv32ImcClint | Backends::Riscv32ImacClint => "riscv-clint-backend",
@@ -195,6 +198,7 @@ impl Backends {
         match self {
             Backends::Thumbv6 | Backends::Thumbv8Base => "cortex-m-source-masking",
             Backends::Thumbv7 | Backends::Thumbv8Main => "cortex-m-basepri",
+            Backends::Armv8r => "armv8r",
             Backends::RiscvEsp32C3 => "riscv-esp32c3",
             Backends::RiscvEsp32C6 => "riscv-esp32c6",
             Backends::Riscv32ImcClint | Backends::Riscv32ImacClint => "riscv-clint",

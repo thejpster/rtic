@@ -45,6 +45,11 @@ mod slic;
 #[cfg(feature = "riscv-slic")]
 pub use slic::*;
 
+#[cfg(feature = "armv8r")]
+mod armv8r;
+#[cfg(feature = "armv8r")]
+pub use armv8r::*;
+
 #[inline(always)]
 pub fn assert_send<T: Send>() {}
 
