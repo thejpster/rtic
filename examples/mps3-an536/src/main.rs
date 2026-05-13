@@ -64,15 +64,20 @@ mod app {
     // TODO: have RTIC generate this routine for us (or #[derive] it from the interrupt enum)
     #[aarch32_rt::irq]
     fn irq() {
-        defmt::debug!("> IRQ");
-        rtic::export::get_and_process(|int_id| {
+        let handler = |int_id| {
             if mps3_an536::interrupt::VirtTimer == int_id {
                 defmt::debug!("VirtTimer tick");
                 mps3_an536::Mono::handle_irq();
             } else {
                 panic!("Unexpected interrupt {:?}", int_id);
             }
-        });
+        };
+        defmt::debug!("> IRQ");
+        unsafe {
+            while rtic::export::get_and_process(handler) {
+                // keep going
+            }
+        }
         defmt::debug!("< IRQ");
     }
 }

@@ -6,11 +6,19 @@ pub use aarch32_cpu::interrupt;
 pub use arm_gic::IntId;
 
 /// Get the highest prio pending interrupt, if any
-pub fn get_and_process<F>(f: F) -> bool where F: FnOnce(IntId) {
+/// 
+/// # Safety
+/// 
+/// Only call this from an IRQ handler (`#[irq]`) with IRQ masked.
+pub unsafe fn get_and_process<F>(f: F) -> bool where F: FnOnce(IntId) {
     let Some(int_id) = arm_gic::gicv3::GicCpuInterface::get_and_acknowledge_interrupt(arm_gic::InterruptGroup::Group1) else {
         return false;
     };
+    unsafe {
+        aarch32_cpu::interrupt::enable();
+    }
     f(int_id);
+    aarch32_cpu::interrupt::disable();
     arm_gic::gicv3::GicCpuInterface::end_interrupt(int_id, arm_gic::InterruptGroup::Group1);
     true
 }
