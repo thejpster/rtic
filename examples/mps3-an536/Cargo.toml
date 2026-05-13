@@ -1,0 +1,18 @@
+[package]
+name = "mps3-an536"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+aarch32-cpu = { version = "0.3", features = ["critical-section-single-core", "defmt"] }
+aarch32-rt = "0.3"
+defmt = "1.1.0"
+defmt-semihosting = "0.3.0"
+fugit = { version = "0.3.7", features = ["defmt"] }
+
+[dependencies.rtic]
+path = "../../rtic"
+version = "2.0.1"
+features = ["armv8r-backend"]
